@@ -1,0 +1,370 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+
+:root {
+    /* Light Theme Colors */
+    --primary-color: #007bff; /* Cool Blue */
+    --secondary-color: #6c757d; /* Grey */
+    --background-color: #f8f9fa; /* Light Grey */
+    --text-color: #333;
+    --card-bg: #ffffff;
+    --success-color: #28a745; /* Green */
+    --error-color: #dc3545; /* Red */
+    --border-radius: 8px;
+    --box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Dark Theme Colors */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --primary-color: #66b2ff; /* Lighter Blue for contrast */
+        --secondary-color: #a0a9b4; /* Lighter Grey */
+        --background-color: #1a1a1a; /* Dark Black */
+        --text-color: #e0e0e0; /* Light Grey */
+        --card-bg: #2c2c2c; /* Dark Grey */
+        --success-color: #47d147; /* Brighter Green */
+        --error-color: #ff6666; /* Brighter Red */
+        --box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    }
+}
+
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.container {
+    background-color: var(--card-bg);
+    padding: 30px 40px;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    width: 100%;
+    max-width: 600px;
+    text-align: center;
+}
+
+h1 {
+    color: var(--primary-color);
+    margin-bottom: 30px;
+    font-weight: 600;
+}
+
+h2 {
+    color: var(--secondary-color);
+    margin-bottom: 20px;
+    font-weight: 400;
+}
+
+/* Setup Screen */
+#setup-screen .form-group {
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+#setup-screen label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: var(--secondary-color);
+}
+
+#week-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+#week-options label {
+    display: flex;
+    align-items: center;
+    background-color: var(--background-color);
+    padding: 8px 15px;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    font-weight: 400; /* Reset weight for checkbox labels */
+    color: var(--text-color); /* Reset color */
+}
+
+#week-options label:hover {
+     background-color: #e9ecef;
+}
+
+/* Dark theme hover for week options */
+@media (prefers-color-scheme: dark) {
+    #week-options label:hover {
+        background-color: #3a3a3a; /* Slightly lighter dark grey */
+    }
+}
+
+
+#week-options input[type="checkbox"] {
+    margin-right: 8px;
+    accent-color: var(--primary-color);
+}
+
+#time-limit {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ced4da;
+    border-radius: var(--border-radius);
+    box-sizing: border-box;
+    font-size: 1rem;
+    background-color: var(--card-bg); /* Match card background in dark mode */
+    color: var(--text-color); /* Match text color in dark mode */
+    border-color: #ced4da; /* Default border color */
+}
+
+/* Dark theme input border */
+@media (prefers-color-scheme: dark) {
+    #time-limit {
+        border-color: #555; /* Darker border in dark mode */
+    }
+}
+
+
+/* Quiz Screen */
+#quiz-screen .quiz-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    color: var(--secondary-color);
+    font-size: 0.9rem;
+}
+
+#question-container {
+    background-color: var(--background-color);
+    padding: 20px;
+    border-radius: var(--border-radius);
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+#question-text {
+    margin-bottom: 25px;
+    font-size: 1.2rem;
+    color: var(--text-color);
+    font-weight: 600;
+    line-height: 1.5;
+}
+
+#options-container .option {
+    display: block;
+    background-color: var(--card-bg);
+    padding: 12px 15px;
+    margin-bottom: 10px;
+    border-radius: var(--border-radius);
+    border: 1px solid #e0e0e0;
+    cursor: pointer;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+#options-container .option:hover {
+    background-color: #f1f1f1;
+    border-color: var(--primary-color);
+}
+
+/* Dark theme hover for options */
+@media (prefers-color-scheme: dark) {
+    #options-container .option:hover {
+        background-color: #3a3a3a; /* Slightly lighter dark grey */
+        border-color: var(--primary-color);
+    }
+     #options-container .option {
+        border-color: #555; /* Darker border in dark mode */
+     }
+}
+
+
+#options-container .option.selected {
+    background-color: #cce5ff; /* Light blue for selected */
+    border-color: var(--primary-color);
+    font-weight: 600;
+}
+
+/* Dark theme selected option */
+@media (prefers-color-scheme: dark) {
+    #options-container .option.selected {
+        background-color: #004085; /* Darker blue for selected */
+        color: white; /* White text for selected */
+    }
+}
+
+#options-container .option.correct {
+    background-color: #d4edda; /* Light green */
+    border-color: var(--success-color);
+}
+
+/* Dark theme correct option */
+@media (prefers-color-scheme: dark) {
+    #options-container .option.correct {
+        background-color: #1e4c26; /* Dark green */
+        color: white; /* White text for correct */
+    }
+}
+
+#options-container .option.incorrect {
+    background-color: #f8d7da; /* Light red */
+    border-color: var(--error-color);
+}
+
+/* Dark theme incorrect option */
+@media (prefers-color-scheme: dark) {
+    #options-container .option.incorrect {
+        background-color: #6f1d22; /* Dark red */
+        color: white; /* White text for incorrect */
+    }
+}
+
+
+/* Results Screen */
+#results-screen p {
+    font-size: 1.1rem;
+    margin-bottom: 15px;
+    line-height: 1.6;
+}
+
+#score {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+/* Buttons */
+button {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: background-color 0.3s ease, transform 0.1s ease;
+    margin-top: 10px;
+}
+
+button:hover {
+    background-color: #0056b3; /* Darker blue */
+}
+
+@media (prefers-color-scheme: dark) {
+     button:hover {
+        background-color: #4da6ff; /* Slightly lighter blue */
+    }
+}
+
+
+button:active {
+    transform: scale(0.98);
+}
+
+button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+/* Dark theme disabled button */
+@media (prefers-color-scheme: dark) {
+    button:disabled {
+        background-color: #555555;
+        color: #aaaaaa;
+    }
+}
+
+#restart-quiz-btn {
+    background-color: var(--success-color);
+}
+#restart-quiz-btn:hover {
+    background-color: #218838; /* Darker green */
+}
+
+/* Dark theme restart button hover */
+@media (prefers-color-scheme: dark) {
+    #restart-quiz-btn:hover {
+        background-color: #3d993d; /* Slightly darker green */
+    }
+}
+
+
+/* Utility */
+.hidden {
+    display: none;
+}
+
+.error-message {
+    color: var(--error-color);
+    margin-top: 15px;
+    font-size: 0.9rem;
+    min-height: 1em; /* Prevent layout shifts */
+}
+
+/* Add this to your style.css */
+
+.result-question {
+    border: 1px solid #ccc;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+    color: black;
+}
+
+.result-question strong {
+    color: #333;
+}
+
+/* Styles for correctly answered questions/text */
+.correctly-answered {
+    border-color: #4CAF50; /* Green border */
+    background-color: #e8f5e9; /* Light green background */
+}
+
+.correct-answer-text {
+    color: #4CAF50; /* Green text */
+    font-weight: bold;
+}
+
+/* Styles for incorrectly answered questions/text */
+.incorrectly-answered {
+    border-color: #F44336; /* Red border */
+    background-color: #ffebee; /* Light red background */
+}
+
+.incorrect-answer-text {
+    color: #F44336; /* Red text */
+    font-weight: bold;
+}
+
+/* Styles for unanswered questions/text */
+.unanswered-question {
+    border-color: #ff9800; /* Orange border */
+    background-color: #fff3e0; /* Light orange background */
+}
+
+.unanswered-text {
+    color: #ff9800; /* Orange text */
+    font-weight: bold;
+    font-style: italic;
+}
+
+#detailed-results {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+}
+
+#detailed-results h3 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #555;
+}

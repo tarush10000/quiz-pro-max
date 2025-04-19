@@ -1,0 +1,351 @@
+document.addEventListener('DOMContentLoaded', () => {
+    // DOM Elements
+    const setupScreen = document.getElementById('setup-screen');
+    const quizScreen = document.getElementById('quiz-screen');
+    const resultsScreen = document.getElementById('results-screen');
+    const weekOptionsContainer = document.getElementById('week-options');
+    const timeLimitInput = document.getElementById('time-limit');
+    const startQuizBtn = document.getElementById('start-quiz-btn');
+    const questionCounter = document.getElementById('question-counter');
+    const timerDisplay = document.getElementById('timer');
+    const questionText = document.getElementById('question-text');
+    const optionsContainer = document.getElementById('options-container');
+    const nextQuestionBtn = document.getElementById('next-question-btn');
+    const scoreDisplay = document.getElementById('score');
+    const timeTakenDisplay = document.getElementById('time-taken');
+    const restartQuizBtn = document.getElementById('restart-quiz-btn');
+    const setupError = document.getElementById('setup-error');
+    const quizError = document.getElementById('quiz-error');
+    const detailedResultsContainer = document.getElementById('detailed-results'); // Get the new container
+
+
+    // State Variables
+    let allQuestions = {};
+    let currentQuizQuestions = [];
+    let currentQuestionIndex = 0;
+    let score = 0;
+    let timerInterval;
+    let timeRemaining = 0;
+    let totalTime = 0;
+    let quizActive = false;
+    let quizResultsDetail = []; // Array to store details for results screen
+
+
+    // --- Utility Functions ---
+
+    // Fisher-Yates (Knuth) Shuffle
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    function formatTime(seconds) {
+        const minutes = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    // --- Loading and Setup ---
+
+    async function loadQuestions() {
+        try {
+            const response = await fetch('questions.json');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            allQuestions = await response.json();
+            populateWeekOptions();
+        } catch (error) {
+            console.error("Failed to load questions:", error);
+            setupError.textContent = "Error loading questions. Please check the console or refresh.";
+            startQuizBtn.disabled = true;
+        }
+    }
+
+    function populateWeekOptions() {
+        weekOptionsContainer.innerHTML = ''; // Clear previous options
+        const weeks = Object.keys(allQuestions);
+        weeks.forEach(weekKey => {
+            const weekNumber = weekKey.replace('week', '');
+            const label = document.createElement('label');
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.value = weekKey;
+            checkbox.id = `week-${weekNumber}`;
+            label.htmlFor = `week-${weekNumber}`;
+            label.appendChild(checkbox);
+            label.appendChild(document.createTextNode(` Week ${weekNumber}`));
+            weekOptionsContainer.appendChild(label);
+        });
+    }
+
+    // --- Quiz Logic ---
+
+    function startQuiz() {
+        setupError.textContent = ''; // Clear previous errors
+        const selectedWeeks = Array.from(weekOptionsContainer.querySelectorAll('input[type="checkbox"]:checked'))
+                                     .map(cb => cb.value);
+
+        if (selectedWeeks.length === 0) {
+            setupError.textContent = "Please select at least one week.";
+            return;
+        }
+
+        const timeLimitMinutes = parseInt(timeLimitInput.value, 10);
+        if (isNaN(timeLimitMinutes) || timeLimitMinutes <= 0) {
+            setupError.textContent = "Please enter a valid time limit (greater than 0).";
+            return;
+        }
+
+        // Prepare questions
+        currentQuizQuestions = [];
+        selectedWeeks.forEach(weekKey => {
+            if (allQuestions[weekKey]) {
+                currentQuizQuestions.push(...allQuestions[weekKey]);
+            }
+        });
+
+        if (currentQuizQuestions.length === 0) {
+             setupError.textContent = "No questions found for the selected weeks.";
+             return;
+        }
+
+        shuffleArray(currentQuizQuestions); // Shuffle questions for the quiz
+        currentQuestionIndex = 0;
+        score = 0;
+        totalTime = timeLimitMinutes * 60;
+        timeRemaining = totalTime;
+        quizActive = true;
+        quizResultsDetail = []; // Clear previous results detail
+
+
+        // Switch screens
+        setupScreen.classList.add('hidden');
+        resultsScreen.classList.add('hidden');
+        quizScreen.classList.remove('hidden');
+
+        displayQuestion();
+        startTimer();
+    }
+
+    function displayQuestion() {
+        quizError.textContent = ''; // Clear previous error
+        if (currentQuestionIndex >= currentQuizQuestions.length || !quizActive) {
+            endQuiz();
+            return;
+        }
+
+        const questionData = currentQuizQuestions[currentQuestionIndex];
+        questionText.textContent = questionData.question;
+        optionsContainer.innerHTML = ''; // Clear previous options
+
+        questionCounter.textContent = `Question ${currentQuestionIndex + 1} of ${currentQuizQuestions.length}`;
+        nextQuestionBtn.textContent = (currentQuestionIndex === currentQuizQuestions.length - 1) ? "Finish Quiz" : "Next Question";
+        nextQuestionBtn.disabled = true; // Disable until an option is selected
+
+
+        // Shuffle options
+        const shuffledOptions = shuffleArray([...questionData.options]);
+
+        shuffledOptions.forEach(optionText => {
+            const optionElement = document.createElement('button');
+            optionElement.classList.add('option');
+            optionElement.textContent = optionText;
+            // Store correct answer data directly in the element for easier access during selection
+             // This is slightly less clean than passing it, but avoids complex event listener closures
+            optionElement.dataset.correctAnswer = questionData.answer;
+            optionElement.onclick = () => selectOption(optionElement, optionText === questionData.answer);
+            optionsContainer.appendChild(optionElement);
+        });
+    }
+
+    function selectOption(selectedButton, isCorrect) {
+          if (!quizActive) return; // Don't process clicks after quiz ends
+
+        // Disable further clicks on options for this question
+        const allOptions = optionsContainer.querySelectorAll('.option');
+        allOptions.forEach(btn => {
+             btn.onclick = null; // Remove click listener
+             btn.style.cursor = 'default'; // Change cursor
+             // Highlight correct answer on all options
+             if (btn.textContent === selectedButton.dataset.correctAnswer) {
+                  btn.classList.add('correct');
+             }
+        });
+
+        // Record the result for this question
+        const currentQuestionData = currentQuizQuestions[currentQuestionIndex];
+        quizResultsDetail.push({
+            question: currentQuestionData.question,
+            userAnswer: selectedButton.textContent,
+            correctAnswer: selectedButton.dataset.correctAnswer, // Get correct answer from dataset
+            isCorrect: isCorrect
+        });
+
+
+        // Mark selected button (visually)
+        if (!isCorrect) { // Only add 'incorrect' class if the user was wrong
+             selectedButton.classList.add('incorrect');
+        }
+        // The correct answer is always highlighted with 'correct' class above
+
+
+        if (isCorrect) {
+            score++;
+        }
+
+        nextQuestionBtn.disabled = false; // Enable Next button
+    }
+
+
+    function nextQuestion() {
+          if (!quizActive) return; // Prevent accidental clicks
+
+        // Check if the current question was answered before moving on
+        // This prevents skipping questions using the Next button without answering
+        const currentQuestionData = currentQuizQuestions[currentQuestionIndex];
+        const resultRecorded = quizResultsDetail.some(r => r.question === currentQuestionData.question);
+
+        if (!resultRecorded) {
+            // This case should ideally not happen if the Next button is disabled until an option is selected
+            // But as a safeguard, you could add a message or handle it differently.
+            // For now, we'll assume the button is correctly managed.
+            console.warn("Next button pressed without answering the current question.");
+             quizError.textContent = "Please select an option before moving to the next question.";
+             return; // Prevent moving on
+        }
+
+
+        currentQuestionIndex++;
+        displayQuestion();
+    }
+
+    function startTimer() {
+        timerDisplay.textContent = `Time Left: ${formatTime(timeRemaining)}`;
+        clearInterval(timerInterval); // Clear any existing interval
+
+        timerInterval = setInterval(() => {
+            timeRemaining--;
+            timerDisplay.textContent = `Time Left: ${formatTime(timeRemaining)}`;
+
+            if (timeRemaining <= 0) {
+                clearInterval(timerInterval);
+                quizError.textContent = "Time's up!";
+                endQuiz(true); // Indicate timeout
+            }
+        }, 1000);
+    }
+
+    function endQuiz(timedOut = false) {
+          if (!quizActive) return; // Prevent multiple calls
+          quizActive = false; // Mark quiz as inactive
+
+        clearInterval(timerInterval);
+
+        // Disable option interaction immediately
+        const allOptions = optionsContainer.querySelectorAll('.option');
+          allOptions.forEach(btn => {
+               btn.onclick = null;
+               btn.style.cursor = 'default';
+          });
+        nextQuestionBtn.disabled = true; // Disable next button
+
+
+        const timeTaken = totalTime - timeRemaining;
+        scoreDisplay.textContent = `Your Score: ${score} out of ${currentQuizQuestions.length}`;
+        timeTakenDisplay.textContent = `Time Taken: ${formatTime(timeTaken)}`;
+        if (timedOut) {
+            timeTakenDisplay.textContent += " (Time Limit Reached)";
+        }
+
+        // Display detailed results BEFORE switching screen
+        displayDetailedResults();
+
+
+        // Switch screens after a brief delay if timed out, to show the message
+        setTimeout(() => {
+            quizScreen.classList.add('hidden');
+            resultsScreen.classList.remove('hidden');
+        }, timedOut ? 1500 : 0); // Delay only if timed out
+    }
+
+    function displayDetailedResults() {
+         detailedResultsContainer.innerHTML = '<h3>Answer Summary</h3>'; // Clear previous results and add heading
+
+         if (currentQuizQuestions.length === 0) {
+              detailedResultsContainer.innerHTML += '<p>No questions were available for the quiz.</p>';
+              return;
+         }
+
+         currentQuizQuestions.forEach((questionData, index) => {
+             // Find the result for this question in our recorded details
+             const result = quizResultsDetail.find(r => r.question === questionData.question);
+
+             const questionDiv = document.createElement('div');
+             questionDiv.classList.add('result-question'); // Add base class
+
+             const questionHeading = document.createElement('p');
+             questionHeading.innerHTML = `<strong>Q${index + 1}:</strong> ${questionData.question}`;
+             questionDiv.appendChild(questionHeading);
+
+             const userAnswerPara = document.createElement('p');
+             const correctAnswerPara = document.createElement('p');
+
+             if (result) {
+                 // Question was answered
+                 userAnswerPara.innerHTML = `Your Answer: <span class="${result.isCorrect ? 'correct-answer-text' : 'incorrect-answer-text'}">${result.userAnswer}</span>`;
+                 correctAnswerPara.innerHTML = `Correct Answer: <span class="correct-answer-text">${result.correctAnswer}</span>`;
+
+                 if (!result.isCorrect) {
+                      questionDiv.classList.add('incorrectly-answered'); // Add class for styling incorrect
+                 } else {
+                      questionDiv.classList.add('correctly-answered'); // Add class for styling correct
+                 }
+
+             } else {
+                 // Question was not answered (e.g., due to time out)
+                 userAnswerPara.innerHTML = 'Your Answer: <span class="unanswered-text">Unanswered</span>';
+                 correctAnswerPara.innerHTML = `Correct Answer: <span class="correct-answer-text">${questionData.answer}</span>`;
+                  questionDiv.classList.add('unanswered-question'); // Add class for styling unanswered
+             }
+
+             questionDiv.appendChild(userAnswerPara);
+             questionDiv.appendChild(correctAnswerPara);
+
+             detailedResultsContainer.appendChild(questionDiv);
+         });
+     }
+
+
+    function restartQuiz() {
+        resultsScreen.classList.add('hidden');
+        setupScreen.classList.remove('hidden');
+        setupError.textContent = '';
+        quizError.textContent = '';
+        detailedResultsContainer.innerHTML = ''; // Clear detailed results display
+        // Reset quiz state variables
+        currentQuizQuestions = [];
+        currentQuestionIndex = 0;
+        score = 0;
+        clearInterval(timerInterval);
+        timeRemaining = 0;
+        totalTime = 0;
+        quizActive = false;
+        quizResultsDetail = []; // Clear stored results detail
+         // Optional: Reset checkboxes on setup screen
+         // populateWeekOptions();
+    }
+
+
+    // --- Event Listeners ---
+    startQuizBtn.addEventListener('click', startQuiz);
+    nextQuestionBtn.addEventListener('click', nextQuestion);
+    restartQuizBtn.addEventListener('click', restartQuiz);
+
+
+    // --- Initial Load ---
+    loadQuestions();
+});
